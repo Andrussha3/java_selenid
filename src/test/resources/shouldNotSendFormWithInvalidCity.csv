@@ -1,0 +1,7 @@
+shouldNotSendFormWithInvalidCity(String city)
+Washington
+Симф3рополь
+Симф@ерополь
+
+Кондопога
+12345676
