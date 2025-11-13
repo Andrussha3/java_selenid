@@ -36,68 +36,42 @@ class CardTest {
         open("http://localhost:9999");
     }
 
-
     @ParameterizedTest
     @CsvFileSource(files = "src/test/resources/shouldSendValidForm.csv", numLinesToSkip = 1)
     void shouldSendValidForm(String city, int days, String name, String phone) {
         addDataInForm(city, days, name, phone);
         $("[data-test-id=notification]").shouldBe(Condition.visible, Duration.ofSeconds(15))
-                .shouldHave(text(dateGenerator(days, "dd.MM.yyyy")))
-                .shouldHave(text("Успешно"));
+                .shouldHave(text("Встреча успешно забронирована на " + dateGenerator(days, "dd.MM.yyyy")));
     }
+
     @ParameterizedTest
     @CsvFileSource(files = "src/test/resources/shouldNotSendValidFormWithInvalidName.csv", numLinesToSkip = 1)
     void shouldNotSendFormWithInvalidName(String city, int days, String name, String phone) {
-        $("[data-test-id=city] input").setValue("Симферополь");
-        $("[data-test-id=date] input").press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE)
-                .setValue(dateGenerator(days, "dd.MM.yyyy"));
-        $("[data-test-id=name] input").setValue(name);
-        $$("[data-test-id=phone] input").find(Condition.visible).setValue(phone);
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=name].input_invalid").should(Condition.visible);
-        $$("[data-test-id=name].input_invalid ").find(Condition.visible)
+        addDataInForm(city, days, name, phone);
+        $("[data-test-id=name].input_invalid .input__sub")
                 .shouldHave(text("Имя и Фамилия указаные неверно. Допустимы только русские буквы, пробелы и дефисы."));
     }
 
     @ParameterizedTest
     @CsvFileSource(files = "src/test/resources/shouldNotSendFormWithInvalidPhone.csv", numLinesToSkip = 1)
     void shouldNotSendFormWithInvalidPhone(String phone) {
-        $("[data-test-id=city] input").setValue("Симферополь");
-        $("[data-test-id=date] input").press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE)
-                .setValue(dateGenerator(3, "dd.MM.yyyy"));
-        $("[data-test-id=name] input").setValue("Вася");
-        $("[data-test-id=phone] input").setValue(phone);
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=phone].input_invalid ").shouldBe(Condition.visible)
+        addDataInForm("Симферополь", 3, "Вася", phone);
+        $("[data-test-id=phone].input_invalid .input__sub")
                 .shouldHave(text("Телефон указан неверно. Должно быть 11 цифр, например, +79012345678"));
     }
 
     @ParameterizedTest
     @CsvFileSource(files = "src/test/resources/shouldNotSendFormWithInvalidCity.csv", numLinesToSkip = 1)
     void shouldNotSendFormWithInvalidCity(String city) {
-        $("[data-test-id=city] input").setValue(city);
-        $("[data-test-id=date] input").press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE)
-                .setValue(dateGenerator(3, "dd.MM.yyyy"));
-        $("[data-test-id=name] input").setValue("Вася");
-        $("[data-test-id=phone] input").setValue("+79114359999");
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=city].input_invalid").should(Condition.visible)
-                .shouldHave(text("Доставка в выбранный город недоступна"));;
+        addDataInForm(city, 3, "Вася", "+79114359999");
+        $("[data-test-id=city].input_invalid .input__sub")
+                .shouldHave(text("Доставка в выбранный город недоступна"));
     }
 
     @Test
     void shouldNotSendFormWithInvalidDate() {
-        $("[data-test-id=city] input").setValue("Симферополь");
-        $("[data-test-id=date] input").press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE)
-                .setValue(dateGenerator(2, "dd.MM.yyyy"));
-        $("[data-test-id=name] input").setValue("Вася");
-        $("[data-test-id=phone] input").setValue("+79114359999");
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=date] span.input_invalid").should(Condition.visible)
+        addDataInForm("Симферополь", 2, "Вася", "+79114359999");
+        $("[data-test-id=date] .input_invalid .input__sub")
                 .shouldHave(text("Заказ на выбранную дату невозможен"));
     }
 
@@ -110,33 +84,21 @@ class CardTest {
         $("[data-test-id=phone] input").setValue("+79114359999");
         $("[data-test-id=agreement]").click();
         $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=date] span.input_invalid").should(Condition.visible)
+        $("[data-test-id=date] .input_invalid .input__sub")
                 .shouldHave(text("Неверно введена дата"));
     }
 
     @Test
     void shouldNotSendFormWithEmptyName() {
-        $("[data-test-id=city] input").setValue("Симферополь");
-        $("[data-test-id=date] input").press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE)
-                .setValue(dateGenerator(3, "dd.MM.yyyy"));
-        $("[data-test-id=name] input").setValue("  ");
-        $("[data-test-id=phone] input").setValue("+79114359999");
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=name].input_invalid").should(Condition.visible)
+        addDataInForm("Симферополь", 3, "  ", "+79114359999");
+        $("[data-test-id=name].input_invalid .input__sub")
                 .shouldHave(text("Поле обязательно для заполнения"));
     }
 
     @Test
     void shouldNotSendFormWithEmptyPhone() {
-        $("[data-test-id=city] input").setValue("Симферополь");
-        $("[data-test-id=date] input").press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE)
-                .setValue(dateGenerator(3, "dd.MM.yyyy"));
-        $("[data-test-id=name] input").setValue("Вася");
-        $("[data-test-id=phone] input").setValue("  ");
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=phone].input_invalid").should(Condition.visible)
+        addDataInForm("Симферополь", 3, "Вася", "  ");
+        $("[data-test-id=phone].input_invalid .input__sub")
                 .shouldHave(text("Поле обязательно для заполнения"));
     }
 
@@ -159,7 +121,7 @@ class CardTest {
         $("[data-test-id=phone] input").setValue("+79114359999");
         $("[data-test-id=agreement]").click();
         $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=city].input_invalid").should(Condition.visible)
+        $("[data-test-id=city].input_invalid .input__sub")
                 .shouldHave(text("Поле обязательно для заполнения"));
     }
 
@@ -172,28 +134,15 @@ class CardTest {
         $("[data-test-id=phone] input").setValue("+79114359999");
         $("[data-test-id=agreement]").click();
         $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=date] span.input_invalid").should(Condition.visible)
+        $("[data-test-id=date] .input_invalid .input__sub")
                 .shouldHave(text("Неверно введена дата"));
-    }
-
-    @Test
-    void shouldNotSendFormWithUnCorrectDate() {
-        $("[data-test-id=city] input").setValue("Симферополь");
-        $("[data-test-id=date] input")
-                .press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE).setValue(dateGenerator(2, "dd.MM.yyyy"));
-        $("[data-test-id=name] input").setValue("Вася");
-        $("[data-test-id=phone] input").setValue("+79114359999");
-        $("[data-test-id=agreement]").click();
-        $$("button").find(exactText("Забронировать")).click();
-        $("[data-test-id=date] span.input_invalid").should(Condition.visible)
-                .shouldHave(text("Заказ на выбранную дату невозможен"));
     }
 
     @ParameterizedTest
     @CsvFileSource(files = "src/test/resources/shouldSearchCityWithTwoSymbols.csv")
     void shouldSendFormSearchCityWithTwoSymbols(String querySymbols, String cityToFind) {
         $("[data-test-id=city] input").setValue(querySymbols);
-        $$("div.popup div.menu-item").find(Condition.text(cityToFind)).click();
+        $$(".popup .menu-item").find(Condition.text(cityToFind)).click();
         $("[data-test-id=date] input").press(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE)
                 .setValue(dateGenerator(3, "dd.MM.yyyy"));
         $("[data-test-id=name] input").setValue("ВАСЯ ПЕТРОВ");
@@ -201,8 +150,7 @@ class CardTest {
         $("[data-test-id=agreement]").click();
         $$("button").find(exactText("Забронировать")).click();
         $("[data-test-id=notification]").shouldBe(Condition.visible, Duration.ofSeconds(15))
-                .shouldHave(text(dateGenerator(3, "dd.MM.yyyy")))
-                .shouldHave(text("Успешно"));
+                .shouldHave(text("Встреча успешно забронирована на " + dateGenerator(3, "dd.MM.yyyy")));
     }
 
     @Test
@@ -212,15 +160,14 @@ class CardTest {
         $("[data-test-id=city] input").setValue("Симферополь");
         $("[data-test-id=date] button").click();
         if (LocalDate.now().plusDays(3).getMonthValue() != dayNextWeek.getMonthValue()) {
-            $(" div[data-step='1']").click();
+            $("[data-step='1']").click();
         }
-        $$("td.calendar__day").find(Condition.text(newDay)).click();
+        $$(".calendar__day").find(Condition.text(newDay)).click();
         $("[data-test-id=name] input").setValue("ВАСЯ ПЕТРОВ");
         $("[data-test-id=phone] input").setValue("+79114359999");
         $("[data-test-id=agreement]").click();
         $$("button").find(exactText("Забронировать")).click();
         $("[data-test-id=notification]").shouldBe(Condition.visible, Duration.ofSeconds(15))
-                .shouldHave(text(dateGenerator(7, "dd.MM.yyyy")))
-                .shouldHave(text("Успешно"));
+                .shouldHave(text("Встреча успешно забронирована на " + dateGenerator(7, "dd.MM.yyyy")));
     }
 }
